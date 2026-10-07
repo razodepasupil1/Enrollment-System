@@ -1,0 +1,20 @@
+{
+  "name": "enrollment-system",
+  "private": true,
+  "version": "1.0.0",
+  "packageManager": "pnpm@12.8.1",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel --filter @enroll/api --filter @enroll/web dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r --workspace-concurrency=1 test",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "db:migrate": "pnpm --filter @enroll/api db:migrate",
+    "db:seed": "pnpm --filter @enroll/api db:seed",
+    "db:reset": "pnpm --filter @enroll/api db:reset",
+    "contrast": "pnpm --filter @enroll/web exec node scripts/contrast.mjs"
+  }
+}

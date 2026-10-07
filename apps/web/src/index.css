@@ -1,0 +1,122 @@
+@import "tailwindcss";
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ---------- Design tokens ----------
+   Colour carries meaning, not decoration: one brand ink-blue for actions and focus, and four
+   status hues (open / almost full / full / waitlist) used ONLY for seat and status information. */
+:root {
+  --paper: #f5f6f8;
+  --surface: #ffffff;
+  --sunken: #eceef3;
+  --ink: #14192b;
+  --muted: #4b5270;
+  --line: #d5d9e3;
+  --brand: #233a7a;
+  --on-brand: #ffffff;
+  --focus: #2f5bea;
+
+  --open: #17673d;       --open-bg: #dff2e7;
+  --almost: #8a5200;     --almost-bg: #fbebcb;
+  --full: #a8231c;       --full-bg: #fadfdc;
+  --wait: #553a9e;       --wait-bg: #ebe4f8;
+
+  /* Timetable course colours: tinted fill, readable text, firmer border. */
+  --c0-bg: #dce6ff; --c0-fg: #1b2f78; --c0-bd: #9fb6f5;
+  --c1-bg: #ddf3e6; --c1-fg: #14573a; --c1-bd: #8fd0ad;
+  --c2-bg: #fce8cc; --c2-fg: #7a4a00; --c2-bd: #ebbe78;
+  --c3-bg: #f3e1f7; --c3-fg: #6b2a7a; --c3-bd: #d3a2e0;
+  --c4-bg: #d9f1f4; --c4-fg: #0f5963; --c4-bd: #8acbd5;
+  --c5-bg: #fadddd; --c5-fg: #8a2222; --c5-bd: #e7a0a0;
+  --c6-bg: #e9ebc8; --c6-fg: #55590f; --c6-bd: #c5c97a;
+  --c7-bg: #e4e4ee; --c7-fg: #3a3f63; --c7-bd: #b3b6cf;
+}
+:root[data-theme="dark"] {
+  --paper: #0e1322;
+  --surface: #161c30;
+  --sunken: #1d2540;
+  --ink: #e9ecf6;
+  --muted: #a9b1cc;
+  --line: #2b3454;
+  --brand: #9db1f5;
+  --on-brand: #0e1322;
+  --focus: #8fa9ff;
+
+  --open: #7fd9a4;       --open-bg: #17382a;
+  --almost: #f0c26b;     --almost-bg: #3b2d12;
+  --full: #ff9e96;       --full-bg: #44201e;
+  --wait: #c3b0f5;       --wait-bg: #2e2550;
+
+  --c0-bg: #1f2d5c; --c0-fg: #cddaff; --c0-bd: #3f5aa8;
+  --c1-bg: #17402c; --c1-fg: #c4efd6; --c1-bd: #2f7a55;
+  --c2-bg: #47310b; --c2-fg: #fbdca8; --c2-bd: #8a6422;
+  --c3-bg: #3f1f48; --c3-fg: #efcff5; --c3-bd: #7d4a8c;
+  --c4-bg: #123f46; --c4-fg: #c2eaf0; --c4-bd: #2b7886;
+  --c5-bg: #4a1d1d; --c5-fg: #f9cccc; --c5-bd: #8f4545;
+  --c6-bg: #3a3d10; --c6-fg: #e6e9b4; --c6-bd: #7b8030;
+  --c7-bg: #2a2e4a; --c7-fg: #d3d6ee; --c7-bd: #565c88;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-brand: var(--brand);
+  --color-on-brand: var(--on-brand);
+  --color-focus: var(--focus);
+  --color-open: var(--open);     --color-open-bg: var(--open-bg);
+  --color-almost: var(--almost); --color-almost-bg: var(--almost-bg);
+  --color-full: var(--full);     --color-full-bg: var(--full-bg);
+  --color-wait: var(--wait);     --color-wait-bg: var(--wait-bg);
+  --font-display: "Bricolage Grotesque", "Public Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Public Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+@layer base {
+  html { color-scheme: light; }
+  html[data-theme="dark"] { color-scheme: dark; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.55;
+    font-variant-numeric: tabular-nums; /* times, seat counts and grades line up */
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; line-height: 1.2; }
+  h1 { font-size: 1.75rem; font-weight: 700; }
+  h2 { font-size: 1.2rem; font-weight: 700; }
+  h3 { font-size: 1rem; font-weight: 600; }
+  p { max-width: 70ch; }
+
+  /* Keyboard focus is always visible, in both themes. */
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+  ::selection { background: color-mix(in srgb, var(--brand) 30%, transparent); }
+}
+
+/* Seat conflicts on the timetable: stripes carry the meaning, so it does not rely on colour alone. */
+.conflict-stripes {
+  background-image: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--full) 28%, transparent) 6px 9px);
+}
+
+.skip-link {
+  position: absolute; left: -999px; top: 8px; z-index: 100;
+  background: var(--brand); color: var(--on-brand); padding: 8px 14px; border-radius: 6px;
+}
+.skip-link:focus { left: 8px; }
+
+/* Respect the OS setting: no transitions or animations at all. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
+}
+
+/* Registration form and transcript print cleanly: chrome hidden, black on white. */
+@media print {
+  .no-print { display: none !important; }
+  html, body { background: #fff !important; color: #000 !important; }
+  .print-sheet { border: none !important; box-shadow: none !important; padding: 0 !important; background: #fff !important; color: #000 !important; }
+  main { padding: 0 !important; }
+}
