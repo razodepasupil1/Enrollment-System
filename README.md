@@ -105,6 +105,43 @@ Documented in [`.env.example`](.env.example).
 | `DEMO_MODE` | One-click demo logins and the Rush Simulator. **Off by default**, see the warning below |
 | `GRADING_POLICY` | `four-point` (0.0 to 4.0, higher is better) or `five-point` (1.0 to 5.0, lower is better) |
 
+## Deploying the API to AWS EC2 with Nginx
+
+This setup runs the API on EC2 and can keep the web app on Vercel. Use RDS MySQL 8 for production data;
+do not expose the API's Node port or the database port to the public internet.
+
+1. Create an EC2 security group that allows SSH only from your IP and HTTP/HTTPS (ports 80/443). Create
+   an RDS security group that allows MySQL (3306) only from the EC2 security group.
+2. Point a DNS name such as `api.example.com` at the EC2 instance. Install Nginx, then copy
+   [`deploy/nginx/enrollment-api.conf`](deploy/nginx/enrollment-api.conf) to
+   `/etc/nginx/sites-available/enrollment-api`. Replace `api.example.com` with your hostname, enable the
+   site, and check/reload Nginx:
+
+   ```bash
+   sudo ln -s /etc/nginx/sites-available/enrollment-api /etc/nginx/sites-enabled/enrollment-api
+   sudo nginx -t
+   sudo systemctl reload nginx
+   ```
+
+3. Configure the API process to listen on port 4000, then obtain HTTPS for the hostname with Certbot:
+
+   ```bash
+   sudo certbot --nginx -d api.example.com
+   ```
+
+4. Set the API's production environment variables, including `DATABASE_URL` for RDS, `DB_SSL=true`,
+   `JWT_SECRET`, `NODE_ENV=production`, and `DEMO_MODE=false`. Run `pnpm db:migrate` against the new
+   database before starting the API.
+5. To keep the web app on Vercel, change the `/api/:path*` destination in
+   [`apps/web/vercel.json`](apps/web/vercel.json) to
+   `https://api.example.com/api/:path*`. This proxies API requests through the web origin, preserving the
+   app's same-origin session-cookie behavior. Keep `CLIENT_ORIGIN` unset in this proxy setup.
+
+Verify the API directly at `https://api.example.com/api/health` and through the web app at
+`https://YOUR-WEB-PROJECT.vercel.app/api/health`. The API package currently has no dedicated EC2 production
+start script; configure a supervised Node process (for example, a `systemd` service) to run the API on
+port 4000.
+
 ## Deploying to Vercel
 
 Two Vercel projects from this one repo. The browser sees a single origin: the web project serves the app and
