@@ -105,17 +105,36 @@ Documented in [`.env.example`](.env.example).
 | `DEMO_MODE` | One-click demo logins and the Rush Simulator. **Off by default**, see the warning below |
 | `GRADING_POLICY` | `four-point` (0.0 to 4.0, higher is better) or `five-point` (1.0 to 5.0, lower is better) |
 
-## Deploying the API to AWS EC2 with Nginx
+## Deploying the web app and API to AWS EC2 with Nginx
 
-This setup runs the API on EC2 and can keep the web app on Vercel. Use RDS MySQL 8 for production data;
-do not expose the API's Node port or the database port to the public internet.
+This serves the Vite frontend and proxies `/api/` to the API on the same EC2 instance. The browser uses one
+origin, so the app's session cookie remains first-party. Use RDS MySQL 8 for production data.
 
-1. Create an EC2 security group that allows SSH only from your IP and HTTP/HTTPS (ports 80/443). Create
-   an RDS security group that allows MySQL (3306) only from the EC2 security group.
-2. Point a DNS name such as `api.example.com` at the EC2 instance. Install Nginx, then copy
-   [`deploy/nginx/enrollment-api.conf`](deploy/nginx/enrollment-api.conf) to
-   `/etc/nginx/sites-available/enrollment-api`. Replace `api.example.com` with your hostname, enable the
-   site, and check/reload Nginx:
+1. Create an EC2 security group that allows SSH only from your IP and HTTP/HTTPS (ports 80/443). Do not
+   open port 4000 publicly. Create an RDS security group that allows MySQL (3306) only from the EC2
+   security group.
+2. Point your domain (the checked-in Nginx example uses `uenrollment.com`) to the EC2 Elastic IP. On EC2,
+   install Node.js 20+ and pnpm 12.8.1, clone the repository, and install workspace dependencies:
+
+   ```bash
+   git clone <your-repository-url> enrollment-system
+   cd enrollment-system
+   corepack enable
+   corepack prepare pnpm@12.8.1 --activate
+   pnpm install --frozen-lockfile
+   ```
+
+3. Build the frontend and copy the static files to Nginx's document root:
+
+   ```bash
+   pnpm --filter @enroll/web build
+   sudo mkdir -p /var/www/enrollment-system
+   sudo cp -r apps/web/dist/. /var/www/enrollment-system/
+   ```
+
+4. Install Nginx and copy [`deploy/nginx/enrollment-api.conf`](deploy/nginx/enrollment-api.conf) to
+   `/etc/nginx/sites-available/enrollment-api`. If using another domain, change `server_name` in the
+   config. Enable the site and check/reload Nginx:
 
    ```bash
    sudo ln -s /etc/nginx/sites-available/enrollment-api /etc/nginx/sites-enabled/enrollment-api
@@ -123,24 +142,23 @@ do not expose the API's Node port or the database port to the public internet.
    sudo systemctl reload nginx
    ```
 
-3. Configure the API process to listen on port 4000, then obtain HTTPS for the hostname with Certbot:
+   The config serves files from `/var/www/enrollment-system`, falls back to `index.html` for frontend
+   routes, and proxies `/api/` to `127.0.0.1:4000`.
+
+5. Configure the API to run as a supervised service on port 4000. Set production environment variables,
+   including `DATABASE_URL` for RDS, `DB_SSL=true`, `JWT_SECRET`, `NODE_ENV=production`, and
+   `DEMO_MODE=false`. Run `pnpm db:migrate` against RDS before starting the API. The API package currently
+   has no dedicated EC2 production start script; do not use its watch-mode `dev` script for the service.
+6. Install Certbot and enable HTTPS for the same domain:
 
    ```bash
-   sudo certbot --nginx -d api.example.com
+   sudo apt install -y certbot python3-certbot-nginx
+   sudo certbot --nginx -d uenrollment.com
    ```
 
-4. Set the API's production environment variables, including `DATABASE_URL` for RDS, `DB_SSL=true`,
-   `JWT_SECRET`, `NODE_ENV=production`, and `DEMO_MODE=false`. Run `pnpm db:migrate` against the new
-   database before starting the API.
-5. To keep the web app on Vercel, change the `/api/:path*` destination in
-   [`apps/web/vercel.json`](apps/web/vercel.json) to
-   `https://api.example.com/api/:path*`. This proxies API requests through the web origin, preserving the
-   app's same-origin session-cookie behavior. Keep `CLIENT_ORIGIN` unset in this proxy setup.
-
-Verify the API directly at `https://api.example.com/api/health` and through the web app at
-`https://YOUR-WEB-PROJECT.vercel.app/api/health`. The API package currently has no dedicated EC2 production
-start script; configure a supervised Node process (for example, a `systemd` service) to run the API on
-port 4000.
+Open `https://uenrollment.com` and verify `https://uenrollment.com/api/health`. To publish frontend
+changes later, rebuild with `pnpm --filter @enroll/web build`, copy the new `dist` files to
+`/var/www/enrollment-system/`, and reload the page. `apps/web/vercel.json` is not used for this EC2 setup.
 
 ## Deploying to Vercel
 
