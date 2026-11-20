@@ -1,6 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "other",
   "buildCommand": "pnpm run build:vercel",
   "functions": { "api/index.js": { "includeFiles": "dist/**" } },
   "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
