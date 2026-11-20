@@ -1,10 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-<<<<<<< HEAD
-=======
   "framework": "",
->>>>>>> 3607663 (remove framework)
-  "buildCommand": "pnpm run build:vercel",
+  "buildCommand": "pnpm run build:vercel && mkdir -p public",
+  "outputDirectory": "public",
   "functions": { "api/index.js": { "includeFiles": "dist/**" } },
   "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
 }
